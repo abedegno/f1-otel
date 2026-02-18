@@ -1,0 +1,33 @@
+[theme]
+base = "dark"
+primaryColor = "#ff7300"
+backgroundColor=""
+secondaryBackgroundColor="#282830"
+textColor=""
+baseRadius = "medium"
+showWidgetBorder = true
+font="formula1"
+baseFontSize = 12
+
+[[theme.fontFaces]]
+family="formula1"
+url="app/static/Formula1-Bold.woff2"
+style="normal"
+weight="700"
+[[theme.fontFaces]]
+family="formula1"
+url="app/static/Formula1-Regular.woff2"
+style="normal"
+weight="400"
+
+[server]
+enableCORS = false
+enableXsrfProtection = false
+headless = true
+enableStaticServing = true
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"

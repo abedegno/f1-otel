@@ -1,0 +1,12 @@
+# pip3 freeze | xargs pip3 uninstall -y
+wheel
+requests
+psutil
+streamlit
+watchdog
+redis
+faker
+Flask
+waitress
+#folium
+#streamlit_folium

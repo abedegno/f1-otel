@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+.venv/
+
+# Telemetry replay data (large binary files)
+src/telemetry_data/*.tlm
+
+# Dashboard timestamped backups
+dashboards/*-backup-*.ndjson
+
+# Cursor IDE
+.cursor/
+
+# Environment (keep .env.example)
+.env
+
+# Database
+players.sqlite
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

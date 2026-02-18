@@ -1,0 +1,59 @@
+services:
+  f1-app:
+    build: .
+    ports:
+      - "${WEB_UI_PORT:-8501}:8501/tcp"
+      - "${UDP_PORT_RIG1:-20777}:20777/udp"
+      - "${UDP_PORT_RIG2:-20778}:20778/udp"
+      - "${UDP_PORT_RIG3:-20779}:20779/udp"
+      - "${UDP_PORT_RIG4:-20780}:20780/udp"
+    environment:
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - OTLP_ENDPOINT=${OTLP_ENDPOINT:-http://otel-collector:4318}
+    volumes:
+      - db-data:/app/data
+      - ./src/telemetry_data:/app/telemetry_data
+    depends_on:
+      - redis
+      - otel-collector
+
+  redis:
+    image: redis:alpine
+    volumes:
+      - redis-data:/data
+
+  otel-collector:
+    image: docker.elastic.co/elastic-agent/elastic-agent:${ELASTIC_AGENT_VERSION:-9.3.0}
+    command: otel --config /etc/elastic-agent/otel.yml
+    environment:
+      - ELASTIC_ENDPOINT=${ELASTIC_ENDPOINT:-http://elasticsearch:9200}
+      - ELASTIC_API_KEY=${ELASTIC_API_KEY:-}
+    volumes:
+      - ./config/otel-collector-config.yaml:/etc/elastic-agent/otel.yml
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_STACK_VERSION:-9.3.0}
+    profiles: [local]
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${ELASTIC_STACK_VERSION:-9.3.0}
+    profiles: [local]
+    ports:
+      - "${KIBANA_PORT:-5601}:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    volumes:
+      - ./config/kibana.yml:/usr/share/kibana/config/kibana.yml
+    depends_on:
+      - elasticsearch
+
+volumes:
+  redis-data:
+  es-data:
+  db-data:

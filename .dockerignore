@@ -1,0 +1,36 @@
+# Virtual environments
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Git and IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build and logs
+*.log
+
+# Test and development files
+start-collector.sh
+
+# Documentation
+README.md
+*.md
+
+# Data files
+players.sqlite
+dashboards/
+
+# Docker
+Dockerfile*
+docker-compose*
+
+# OS files
+.DS_Store
