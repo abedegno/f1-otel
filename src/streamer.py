@@ -90,6 +90,22 @@ class RedisStreamer:
             st.error(f"Error getting keys: {str(e)}")
             return []
 
+def inject_eui_css():
+    """Inject EUI-inspired CSS once per session (headings, sidebar, focus ring)."""
+    if "eui_css_injected" not in st.session_state:
+        st.markdown("""
+        <style>
+          /* EUI-style headings */
+          h1, h2, h3 { color: #111C2C !important; }
+          /* Sidebar surface */
+          [data-testid="stSidebar"] { background: #ECF1F9 !important; }
+          /* Focus ring */
+          .stButton > button:focus, input:focus { box-shadow: 0 0 0 2px #0B64DD !important; }
+        </style>
+        """, unsafe_allow_html=True)
+        st.session_state.eui_css_injected = True
+
+
 def get_running_rigs(streamer: RedisStreamer) -> List[str]:
     try:
         # Look for all f1:rig_*:metrics keys
@@ -331,6 +347,7 @@ def plot_time_series(data_history: List[Dict], metric: str):
 
 
 def main():
+    inject_eui_css()
     # Add Material Icons CSS
     st.markdown("""
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">

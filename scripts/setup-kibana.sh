@@ -13,11 +13,16 @@ fi
 
 KIBANA_URL="${KIBANA_URL:-http://localhost:${KIBANA_PORT:-5601}}"
 
+CURL_AUTH=()
+if [[ -n "$ELASTIC_API_KEY" ]]; then
+    CURL_AUTH=(-H "Authorization: ApiKey ${ELASTIC_API_KEY}")
+fi
+
 echo "Setting up Kibana data views..."
 echo "Kibana URL: $KIBANA_URL"
 
 echo -n "Waiting for Kibana to be ready"
-until curl -sf "${KIBANA_URL}/api/status" > /dev/null 2>&1; do
+until curl -sf "${CURL_AUTH[@]}" "${KIBANA_URL}/api/status" > /dev/null 2>&1; do
     echo -n "."
     sleep 5
 done
@@ -32,6 +37,7 @@ for dv in "${DATA_VIEWS[@]}"; do
     IFS='|' read -r id title name <<< "$dv"
 
     body=$(curl -s -w "\n%{http_code}" -X POST "${KIBANA_URL}/api/data_views/data_view" \
+        "${CURL_AUTH[@]}" \
         -H 'kbn-xsrf: true' \
         -H 'Content-Type: application/json' \
         -H 'elastic-api-version: 2023-10-31' \
@@ -49,12 +55,13 @@ for dv in "${DATA_VIEWS[@]}"; do
     fi
 done
 
-DASHBOARDS_DIR="$SCRIPT_DIR/../dashboards"
+DASHBOARDS_DIR="${DASHBOARDS_DIR:-$SCRIPT_DIR/../dashboards}"
 NDJSON_FILE="$DASHBOARDS_DIR/f1-telemetry.ndjson"
 if [[ -f "$NDJSON_FILE" ]]; then
     echo ""
     echo "Importing F1 Telemetry dashboard..."
     import_result=$(curl -s -w "\n%{http_code}" -X POST "${KIBANA_URL}/api/saved_objects/_import?overwrite=true" \
+        "${CURL_AUTH[@]}" \
         -H 'kbn-xsrf: true' \
         --form "file=@${NDJSON_FILE}")
     import_code=$(echo "$import_result" | tail -1)

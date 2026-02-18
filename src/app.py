@@ -79,6 +79,24 @@ def get_external_ip():
         return None
 
 
+def inject_eui_css():
+    """Inject EUI-inspired CSS once per session (headings, sidebar, focus ring, logo invert)."""
+    if "eui_css_injected" not in st.session_state:
+        st.markdown("""
+        <style>
+          /* EUI-style headings */
+          h1, h2, h3 { color: #111C2C !important; }
+          /* Sidebar surface */
+          [data-testid="stSidebar"] { background: #ECF1F9 !important; }
+          /* Focus ring */
+          .stButton > button:focus, input:focus { box-shadow: 0 0 0 2px #0B64DD !important; }
+          /* Invert logo for light theme (logo was designed for dark background) */
+          [data-testid="stAppViewContainer"] [data-testid="stImage"] img { filter: invert(1); }
+        </style>
+        """, unsafe_allow_html=True)
+        st.session_state.eui_css_injected = True
+
+
 # Redis connection function
 @st.cache_resource
 def get_redis_connection():
@@ -532,6 +550,7 @@ def rig_status(rig, port, is_running, pid=None):
 
 
 def main():
+    inject_eui_css()
     st.image("static/images/f1-2025.png", width=380)
     external_ip = get_external_ip()
 

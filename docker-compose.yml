@@ -53,6 +53,27 @@ services:
     depends_on:
       - elasticsearch
 
+  setup:
+    image: alpine:latest
+    profiles: [local]
+    depends_on:
+      - elasticsearch
+      - kibana
+    environment:
+      - ELASTIC_ENDPOINT=http://elasticsearch:9200
+      - ELASTIC_API_KEY=${ELASTIC_API_KEY:-}
+      - KIBANA_URL=http://kibana:5601
+      - DASHBOARDS_DIR=/dashboards
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./dashboards:/dashboards:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        apk add --no-cache bash curl > /dev/null 2>&1 &&
+        bash /scripts/setup-elasticsearch.sh &&
+        bash /scripts/setup-kibana.sh
+
 volumes:
   redis-data:
   es-data:

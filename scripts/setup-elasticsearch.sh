@@ -13,12 +13,17 @@ fi
 ES_URL="${ELASTIC_ENDPOINT:-http://localhost:${ES_PORT:-9200}}"
 REFRESH_INTERVAL="${ES_REFRESH_INTERVAL:-200ms}"
 
+CURL_AUTH=()
+if [[ -n "$ELASTIC_API_KEY" ]]; then
+    CURL_AUTH=(-H "Authorization: ApiKey ${ELASTIC_API_KEY}")
+fi
+
 echo "Setting up Elasticsearch index settings..."
 echo "Elasticsearch URL: $ES_URL"
 echo "Refresh interval:  $REFRESH_INTERVAL"
 
 echo -n "Waiting for Elasticsearch to be ready"
-until curl -sf "${ES_URL}/_cluster/health" > /dev/null 2>&1; do
+until curl -sf "${CURL_AUTH[@]}" "${ES_URL}/_cluster/health" > /dev/null 2>&1; do
     echo -n "."
     sleep 5
 done
@@ -36,6 +41,7 @@ for ds in "${DATA_STREAMS[@]}"; do
     template_name="${prefix}@custom"
 
     body=$(curl -s -w "\n%{http_code}" -X PUT "${ES_URL}/_component_template/${template_name}" \
+        "${CURL_AUTH[@]}" \
         -H 'Content-Type: application/json' \
         -d "{\"template\":{\"settings\":{\"index.refresh_interval\":\"${REFRESH_INTERVAL}\"}}}")
 
@@ -52,6 +58,7 @@ echo ""
 echo "Applying to current backing indices..."
 for ds in "${DATA_STREAMS[@]}"; do
     body=$(curl -s -w "\n%{http_code}" -X PUT "${ES_URL}/.ds-${ds}-*/_settings" \
+        "${CURL_AUTH[@]}" \
         -H 'Content-Type: application/json' \
         -d "{\"index.refresh_interval\":\"${REFRESH_INTERVAL}\"}")
 

@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ENV_FILE="$SCRIPT_DIR/.env"
+if [[ -f "$ENV_FILE" ]]; then
+    set -a
+    source "$ENV_FILE"
+    set +a
+fi
+
 usage() {
     echo "Usage: $0 [local|cloud|stop]"
     echo ""
@@ -18,7 +26,6 @@ case "${1:-local}" in
         echo "Web UI:  http://localhost:${WEB_UI_PORT:-8501}"
         echo "Kibana:  http://localhost:${KIBANA_PORT:-5601}"
         echo ""
-        SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
         echo "Setting up Elasticsearch index settings (runs in background)..."
         nohup "$SCRIPT_DIR/scripts/setup-elasticsearch.sh" > /dev/null 2>&1 &
         echo "Setting up Kibana data views (runs in background)..."
@@ -30,9 +37,15 @@ case "${1:-local}" in
         echo ""
         echo "Web UI:  http://localhost:${WEB_UI_PORT:-8501}"
         echo ""
-        echo "To configure Elasticsearch index settings, run: ./scripts/setup-elasticsearch.sh"
-        echo "To create Kibana data views, run: ./scripts/setup-kibana.sh"
-        echo "  Set KIBANA_URL in .env to point to your Kibana instance."
+        echo "Setting up Elasticsearch index settings (runs in background)..."
+        nohup "$SCRIPT_DIR/scripts/setup-elasticsearch.sh" > /dev/null 2>&1 &
+        if [[ -n "$KIBANA_URL" ]]; then
+            echo "Setting up Kibana data views (runs in background)..."
+            nohup "$SCRIPT_DIR/scripts/setup-kibana.sh" > /dev/null 2>&1 &
+        else
+            echo "To create Kibana data views, set KIBANA_URL in .env and run:"
+            echo "  ./scripts/setup-kibana.sh"
+        fi
         ;;
     stop)
         echo "Stopping F1 ELK on Track..."

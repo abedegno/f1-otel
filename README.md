@@ -25,7 +25,7 @@ Two modes via Docker Compose profiles:
 ./start-collector.sh local
 ```
 
-This starts all five containers. Open Kibana at `http://localhost:5601` to explore the data.
+This starts all six containers (including a one-off setup container that configures Elasticsearch and Kibana). Data views and the F1 Telemetry dashboard are created automatically. You can also run `docker compose --profile local up -d` directly; the setup container runs as part of the stack. Open Kibana at `http://localhost:5601` to explore the data.
 
 ### Connecting to Elastic Cloud / Serverless
 
@@ -34,6 +34,7 @@ Edit `.env` with your cluster details:
 ```env
 ELASTIC_ENDPOINT=https://my-deploy.es.us-central1.gcp.cloud.es.io:443
 ELASTIC_API_KEY=your-base64-api-key
+KIBANA_URL=https://my-deploy.kb.us-central1.gcp.cloud.es.io:9243
 ```
 
 Then start:
@@ -41,6 +42,8 @@ Then start:
 ```bash
 ./start-collector.sh cloud
 ```
+
+Setup scripts (Elasticsearch refresh interval, Kibana data views, and dashboard import) run automatically in the background. If you omit `KIBANA_URL`, data views and the dashboard are not created automatically; set `KIBANA_URL` in `.env` and run `./scripts/setup-kibana.sh` when needed.
 
 ### Stopping
 
@@ -123,7 +126,12 @@ The replay files are bind-mounted into the container via `docker-compose.yml` (`
 
 ## Kibana Data Views and Dashboard
 
-Kibana needs data views to explore the telemetry data. When using `./start-collector.sh local`, these are created automatically once Kibana is ready. The setup script also imports a **pre-built F1 Telemetry dashboard** from `dashboards/f1-telemetry.ndjson`, which includes:
+Kibana needs data views to explore the telemetry data. These are created automatically:
+
+- **Local** — When you run `./start-collector.sh local` or `docker compose --profile local up -d`, a `setup` container runs once after Elasticsearch and Kibana are ready. It applies the Elasticsearch refresh interval, creates the data views, and imports the dashboard. `start-collector.sh local` also runs the same setup scripts from the host in the background for immediate feedback.
+- **Cloud** — When you run `./start-collector.sh cloud` with `KIBANA_URL` set in `.env`, the setup scripts run in the background and create data views and import the dashboard. If `KIBANA_URL` is not set, run `./scripts/setup-kibana.sh` manually (with `KIBANA_URL` in the environment or in `.env`).
+
+The **pre-built F1 Telemetry dashboard** (`dashboards/f1-telemetry.ndjson`) includes:
 
 - **Row 0** — Key stats: Gear, Speed (mph), RPM, Throttle %, Brake %, Sector, Current Lap Time
 - **Row 1** — Time series (RPM/Speed, Speed/Brake), Engine Temp, Air/Track Temp, Current Lap
@@ -132,13 +140,7 @@ Kibana needs data views to explore the telemetry data. When using `./start-colle
 
 The dashboard has an **Options list control** for `resource.attributes.f1.hostname` (Rig filter), default **time range** Last 1 minute, and **auto-refresh** every 5 seconds.
 
-For cloud/remote deployments, run the setup script manually:
-
-```bash
-KIBANA_URL=https://my-deploy.kb.us-central1.gcp.cloud.es.io:9243 ./scripts/setup-kibana.sh
-```
-
-Or set `KIBANA_URL` in `.env` and run `./scripts/setup-kibana.sh`.
+Setup scripts support `ELASTIC_API_KEY` for authenticated clusters (Elastic Cloud, Serverless). Set it in `.env` alongside `ELASTIC_ENDPOINT` and `KIBANA_URL`.
 
 ### Creating data views via Kibana Dev Tools
 
@@ -193,10 +195,10 @@ The `index.refresh_interval` is applied via `scripts/setup-elasticsearch.sh`, wh
 1. Creates `@custom` component templates that persist the setting across index rollovers
 2. Applies the setting to current backing indices for immediate effect
 
-For local deployments, this runs automatically via `start-collector.sh`. For cloud, run manually:
+For local deployments, this runs automatically (Docker setup container and/or `start-collector.sh`). For cloud, it runs automatically when you use `./start-collector.sh cloud` (scripts read `ELASTIC_ENDPOINT` and `ELASTIC_API_KEY` from `.env`). To run it manually:
 
 ```bash
-ELASTIC_ENDPOINT=https://my-deploy.es.us-central1.gcp.cloud.es.io:443 ./scripts/setup-elasticsearch.sh
+./scripts/setup-elasticsearch.sh
 ```
 
 Override the interval via the `ES_REFRESH_INTERVAL` variable in `.env` (default: `200ms`).
@@ -251,14 +253,16 @@ The following metrics are sent as OTLP gauges under the `f1.*` namespace. In Ela
 ├── dashboards/
 │   └── f1-telemetry.ndjson       # Pre-built Kibana dashboard (imported by setup-kibana.sh)
 ├── scripts/
-│   ├── setup-elasticsearch.sh    # Configures ES refresh interval (auto-run for local)
-│   └── setup-kibana.sh           # Creates data views + imports F1 dashboard (auto-run for local)
-├── docker-compose.yml            # Multi-service orchestration
+│   ├── setup-elasticsearch.sh    # Configures ES refresh interval (run by setup container + start-collector.sh)
+│   └── setup-kibana.sh           # Creates data views + imports F1 dashboard (run by setup container + start-collector.sh)
+├── docker-compose.yml            # Multi-service orchestration (includes setup service for local profile)
 ├── Dockerfile
 ├── requirements.txt
 ├── VERSION
 └── start-collector.sh
 ```
+
+The Web UI theme is inspired by [Elastic EUI](https://eui.elastic.co/docs/getting-started/theming/tokens/colors) and can be tuned via `src/.streamlit/config.toml` and the optional CSS injection in `app.py` and `streamer.py`.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed architecture documentation.
 

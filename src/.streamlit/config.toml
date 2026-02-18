@@ -1,13 +1,19 @@
+# EUI-inspired theme (Elastic UI tokens)
 [theme]
-base = "dark"
-primaryColor = "#ff7300"
-backgroundColor=""
-secondaryBackgroundColor="#282830"
-textColor=""
+base = "light"
+primaryColor = "#0B64DD"
+backgroundColor = "#F6F9FC"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#1D2A3E"
+borderColor = "#E3E8F2"
 baseRadius = "medium"
 showWidgetBorder = true
-font="formula1"
+font = "formula1"
 baseFontSize = 12
+
+[theme.sidebar]
+backgroundColor = "#ECF1F9"
+textColor = "#1D2A3E"
 
 [[theme.fontFaces]]
 family="formula1"
