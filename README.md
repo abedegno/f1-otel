@@ -277,3 +277,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed architecture docum
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE) for details.
+
+## Acknowledgements
+
+This project is a derivative of [splunk/f1-simulator](https://github.com/splunk/f1-simulator), originally created by Splunk Inc. and licensed under the Apache License 2.0. The original project provided the F1 telemetry collection foundation; this version replaces the Splunk backend with an OpenTelemetry pipeline and Elastic Stack.
