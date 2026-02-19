@@ -56,21 +56,23 @@ for dv in "${DATA_VIEWS[@]}"; do
 done
 
 DASHBOARDS_DIR="${DASHBOARDS_DIR:-$SCRIPT_DIR/../dashboards}"
-NDJSON_FILE="$DASHBOARDS_DIR/f1-telemetry.ndjson"
-if [[ -f "$NDJSON_FILE" ]]; then
-    echo ""
-    echo "Importing F1 Telemetry dashboard..."
+
+echo ""
+echo "Importing dashboards from $DASHBOARDS_DIR ..."
+for ndjson in "$DASHBOARDS_DIR"/*.ndjson; do
+    [[ -f "$ndjson" ]] || continue
+    fname=$(basename "$ndjson")
     import_result=$(curl -s -w "\n%{http_code}" -X POST "${KIBANA_URL}/api/saved_objects/_import?overwrite=true" \
         "${CURL_AUTH[@]}" \
         -H 'kbn-xsrf: true' \
-        --form "file=@${NDJSON_FILE}")
+        --form "file=@${ndjson}")
     import_code=$(echo "$import_result" | tail -1)
     if [[ "$import_code" == "200" ]]; then
-        echo "  Imported: F1 Telemetry - ELK on Track (dashboard + panels)"
+        echo "  Imported: $fname"
     else
-        echo "  Warning: Dashboard import returned HTTP $import_code"
+        echo "  Warning: $fname returned HTTP $import_code"
     fi
-fi
+done
 
 echo ""
 echo "Data views ready. Open Kibana at ${KIBANA_URL} to explore your data."

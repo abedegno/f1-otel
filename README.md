@@ -131,14 +131,32 @@ Kibana needs data views to explore the telemetry data. These are created automat
 - **Local** — When you run `./start-collector.sh local` or `docker compose --profile local up -d`, a `setup` container runs once after Elasticsearch and Kibana are ready. It applies the Elasticsearch refresh interval, creates the data views, and imports the dashboard. `start-collector.sh local` also runs the same setup scripts from the host in the background for immediate feedback.
 - **Cloud** — When you run `./start-collector.sh cloud` with `KIBANA_URL` set in `.env`, the setup scripts run in the background and create data views and import the dashboard. If `KIBANA_URL` is not set, run `./scripts/setup-kibana.sh` manually (with `KIBANA_URL` in the environment or in `.env`).
 
-The **pre-built F1 Telemetry dashboard** (`dashboards/f1-telemetry.ndjson`) includes:
+Three **pre-built Kibana dashboards** are imported automatically:
 
-- **Row 0** — Key stats: Gear, Speed (mph), RPM, Throttle %, Brake %, Sector, Current Lap Time
-- **Row 1** — Time series (RPM/Speed, Speed/Brake), Engine Temp, Air/Track Temp, Current Lap
-- **Row 2** — Section header: Car Temperatures
-- **Row 3+4** — Vega car diagram: brake, tyre surface, and tyre inner temperatures for all four wheels (FL, FR, RL, RR) with color-coded thresholds
+**F1 Telemetry** (`dashboards/f1-telemetry.ndjson`) — real-time car telemetry from the metrics index:
 
-The dashboard has an **Options list control** for `resource.attributes.f1.hostname` (Rig filter), default **time range** Last 1 minute, and **auto-refresh** every 5 seconds.
+- Key stats: Gear, Speed (mph), RPM, Throttle %, Brake %, Sector, Current Lap Time
+- Time series (RPM/Speed, Speed/Brake), Engine Temp, Air/Track Temp, Current Lap
+- Vega car diagram: brake, tyre surface, and tyre inner temperatures for all four wheels with color-coded thresholds
+
+**F1 Race Overview** (`dashboards/f1-race-overview.ndjson`) — session context and race status from the logs index:
+
+- Session context: track name, weather, track length, total laps (Vega with ID-to-name lookups)
+- Driver info: player name, driver, team, race number (Vega with team ID lookup)
+- Race position: current position, grid position, last lap time, sector times, pit stops
+- Car status: tyre compound and age, DRS, FIA flags (Vega with color-coded lookups), fuel remaining, ERS energy gauge, speed trap
+- Time series charts: position over time, lap time trend
+
+**F1 Leaderboard** (`dashboards/f1-leaderboard.ndjson`) — cross-session player leaderboard from the logs index:
+
+- Event stats: event name, total unique players, total completed races, current leader with best lap time
+- Leaderboard table: ranked by best lap time across all sessions, showing player, best lap (mm:ss.SSS), total race time, team, rig, and timestamp (Vega with terms aggregation and team ID lookups; top 3 highlighted in gold/silver/bronze)
+- Supporting charts: recent finishes activity feed, best lap trend over time
+- Designed for conference/event use -- attendees take turns racing and the leaderboard tracks the fastest player for a prize
+
+The Telemetry and Race Overview dashboards have an **Options list control** for hostname (Rig filter), default **time range** Last 1 minute, and **auto-refresh** every 5 seconds. The Leaderboard dashboard adds an **Event** filter (by `resource.attributes.f1.event_name`), defaults to **Last 24 hours**, and refreshes every **10 seconds**.
+
+> **Note:** The underlying data streams (`metrics-f1_telemetry.otel-default` and `logs-f1_telemetry.otel-default`) are created by Elasticsearch on first write. Until telemetry data is flowing -- either from a live game or via Playback Mode in the web UI -- the dashboards will show "No data" or Vega errors. This is expected; once a telemetry stream starts, all panels populate automatically.
 
 Setup scripts support `ELASTIC_API_KEY` for authenticated clusters (Elastic Cloud, Serverless). Set it in `.env` alongside `ELASTIC_ENDPOINT` and `KIBANA_URL`.
 
@@ -251,10 +269,12 @@ The following metrics are sent as OTLP gauges under the `f1.*` namespace. In Ela
 │   ├── nginx.conf                # Reverse proxy configuration
 │   └── otel-collector-config.yaml # OpenTelemetry Collector pipeline
 ├── dashboards/
-│   └── f1-telemetry.ndjson       # Pre-built Kibana dashboard (imported by setup-kibana.sh)
+│   ├── f1-telemetry.ndjson       # Car Telemetry dashboard (metrics index)
+│   ├── f1-race-overview.ndjson   # Race Overview dashboard (logs index)
+│   └── f1-leaderboard.ndjson     # Player Leaderboard dashboard (logs index)
 ├── scripts/
 │   ├── setup-elasticsearch.sh    # Configures ES refresh interval (run by setup container + start-collector.sh)
-│   └── setup-kibana.sh           # Creates data views + imports F1 dashboard (run by setup container + start-collector.sh)
+│   └── setup-kibana.sh           # Creates data views + imports all dashboards (run by setup container + start-collector.sh)
 ├── docker-compose.yml            # Multi-service orchestration (includes setup service for local profile)
 ├── Dockerfile
 ├── requirements.txt
